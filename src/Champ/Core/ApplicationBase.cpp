@@ -133,10 +133,6 @@ namespace Champ
     {
     }
 
-    void ApplicationBase::OnPostRender(PingPongBuffer *pingpongBuffer)
-    {
-    }
-
     void ApplicationBase::OnGUI()
     {
     }

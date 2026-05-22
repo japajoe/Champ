@@ -18,4 +18,14 @@ namespace Champ
     {
         pingpongBuffer->Swap();
     }
+
+    bool PostProcessor::IsActive() const
+    {
+        return isActive;
+    }
+
+    void PostProcessor::SetActive(bool active)
+    {
+        isActive = active;
+    }
 }

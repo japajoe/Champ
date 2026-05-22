@@ -1,6 +1,5 @@
 #pragma once
 
-#include "FrameBuffer.hpp"
 #include <string>
 #include <cstdint>
 
@@ -24,7 +23,6 @@ namespace Champ
         virtual void OnUpdate();
         virtual void OnLateUpdate();
         virtual void OnRender();
-        virtual void OnPostRender(PingPongBuffer *pingpongBuffer);
         virtual void OnGUI();
 
     private:
