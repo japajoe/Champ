@@ -9,24 +9,21 @@ namespace Champ
 {
     class PostProcessor
     {
-        friend class Graphics;
-
+    friend class Graphics;
     public:
         PostProcessor();
         virtual void Initialize() = 0;
         virtual void OnProcess(const Matrix4 &projection, const Matrix4 &view) = 0;
         bool IsActive() const;
         void SetActive(bool active);
-
     protected:
-        void Bind();
-        void Render();
-        void SwapBuffers();
-
-    private:
-        uint32_t vao;
         Shader *shader;
         PingPongBuffer *pingpongBuffer;
         bool isActive = true;
+        void Bind();
+        void Render();
+        void SwapBuffers();
+    private:
+        uint32_t vao;
     };
 }
