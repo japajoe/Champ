@@ -1,2 +1,2 @@
 # Champ
-Simple graphics library
+Simple graphics library with all dependencies included.

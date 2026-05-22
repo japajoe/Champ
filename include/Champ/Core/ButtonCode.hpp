@@ -1,0 +1,25 @@
+#pragma once
+
+#define GLFW__MOUSE_BUTTON_1 0
+#define GLFW__MOUSE_BUTTON_2 1
+#define GLFW__MOUSE_BUTTON_3 2
+#define GLFW__MOUSE_BUTTON_4 3
+#define GLFW__MOUSE_BUTTON_5 4
+#define GLFW__MOUSE_BUTTON_6 5
+#define GLFW__MOUSE_BUTTON_7 6
+#define GLFW__MOUSE_BUTTON_8 7
+#define GLFW__MOUSE_BUTTON_LAST GLFW__MOUSE_BUTTON_8
+#define GLFW__MOUSE_BUTTON_LEFT GLFW__MOUSE_BUTTON_1
+#define GLFW__MOUSE_BUTTON_RIGHT GLFW__MOUSE_BUTTON_2
+#define GLFW__MOUSE_BUTTON_MIDDLE GLFW__MOUSE_BUTTON_3
+
+namespace Champ
+{
+    enum class ButtonCode
+    {
+        Unknown = -1,
+        Left = GLFW__MOUSE_BUTTON_LEFT,
+        Right = GLFW__MOUSE_BUTTON_RIGHT,
+        Middle = GLFW__MOUSE_BUTTON_MIDDLE
+    };
+}

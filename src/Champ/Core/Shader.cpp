@@ -1,0 +1,281 @@
+#include "Shader.hpp"
+#include "OpenGL.hpp"
+#include <iostream>
+#include <stdexcept>
+#include <utility>
+#include <regex>
+#include <cstring>
+#include <functional>
+#include <unordered_map>
+#include <vector>
+
+namespace Champ
+{
+	Shader::Shader()
+	{
+		m_id = 0;
+	}
+
+	Shader::Shader(const Shader &other)
+	{
+		m_id = other.m_id;
+	}
+
+	Shader::Shader(Shader &&other) noexcept
+	{
+		m_id = std::exchange(other.m_id, 0);
+	}
+
+	Shader &Shader::operator=(const Shader &other)
+	{
+		if (this != &other)
+		{
+			m_id = other.m_id;
+		}
+		return *this;
+	}
+
+	Shader &Shader::operator=(Shader &&other) noexcept
+	{
+		if (this != &other)
+		{
+			m_id = std::exchange(other.m_id, 0);
+		}
+		return *this;
+	}
+
+	enum ShaderType
+	{
+		ShaderType_Geometry = GL_GEOMETRY_SHADER,
+		ShaderType_Fragment = GL_FRAGMENT_SHADER,
+		ShaderType_Vertex = GL_VERTEX_SHADER
+	};
+
+	static uint32_t CompileShader(const std::string &source, ShaderType shaderType)
+	{
+		uint32_t shader = glCreateShader(shaderType);
+		const char *shaderSource = source.c_str();
+		glShaderSource(shader, 1, &shaderSource, nullptr);
+		glCompileShader(shader);
+
+		int32_t success = 0;
+
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+		if (!success)
+		{
+			char infoLog[512];
+			glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+			switch (shaderType)
+			{
+			case GL_GEOMETRY_SHADER:
+				throw std::runtime_error("Geometry shader compilation failed: " + std::string(infoLog));
+			case GL_FRAGMENT_SHADER:
+				throw std::runtime_error("Fragment shader compilation failed: " + std::string(infoLog));
+			case GL_VERTEX_SHADER:
+				throw std::runtime_error("Vertex shader compilation failed: " + std::string(infoLog));
+			default:
+				throw std::runtime_error("Unknown shader compilation failed: " + std::string(infoLog));
+			}
+		}
+
+		return shader;
+	}
+
+	static uint32_t CreateAndLinkProgram(uint32_t *shaders, uint32_t count)
+	{
+		if (!shaders || count == 0)
+			return 0;
+
+		uint32_t id = glCreateProgram();
+
+		for (uint32_t i = 0; i < count; i++)
+		{
+			glAttachShader(id, shaders[i]);
+		}
+
+		glProgramParameteri(id, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+		glLinkProgram(id);
+
+		int32_t success = 0;
+
+		glGetProgramiv(id, GL_LINK_STATUS, &success);
+
+		if (!success)
+		{
+			char infoLog[512];
+			glGetProgramInfoLog(id, 512, nullptr, infoLog);
+			glDeleteProgram(id);
+			throw std::runtime_error("Shader program linking failed: " + std::string(infoLog));
+		}
+
+		for (uint32_t i = 0; i < count; i++)
+		{
+			glDeleteShader(shaders[i]);
+		}
+
+		return id;
+	}
+
+	void Shader::Generate(const std::string &vertexSource, const std::string &fragmentSource)
+	{
+		std::string sVertex = vertexSource;
+		std::string sFragment = fragmentSource;
+
+		uint32_t vertexShader = CompileShader(sVertex, ShaderType_Vertex);
+		uint32_t fragmentShader = CompileShader(sFragment, ShaderType_Fragment);
+
+		uint32_t shaders[2] = {
+			vertexShader,
+			fragmentShader};
+
+		m_id = CreateAndLinkProgram(shaders, 2);
+	}
+
+	void Shader::Destroy()
+	{
+		if (m_id)
+			glDeleteProgram(m_id);
+		m_id = 0;
+	}
+
+	void Shader::Use()
+	{
+		glUseProgram(m_id);
+	}
+
+	uint32_t Shader::GetId() const
+	{
+		return m_id;
+	}
+
+	void Shader::SetInt(const char *name, int32_t value)
+	{
+		glUniform1i(glGetUniformLocation(m_id, name), value);
+	}
+
+	void Shader::SetFloat(const char *name, float value)
+	{
+		glUniform1f(glGetUniformLocation(m_id, name), value);
+	}
+
+	void Shader::SetFloat2(const char *name, const float *value)
+	{
+		glUniform2fv(glGetUniformLocation(m_id, name), 1, value);
+	}
+
+	void Shader::SetFloat3(const char *name, const float *value)
+	{
+		glUniform3fv(glGetUniformLocation(m_id, name), 1, value);
+	}
+
+	void Shader::SetFloat4(const char *name, const float *value)
+	{
+		glUniform4fv(glGetUniformLocation(m_id, name), 1, value);
+	}
+
+	void Shader::SetMat2(const char *name, const float *value)
+	{
+		glUniformMatrix2fv(glGetUniformLocation(m_id, name), 1, false, value);
+	}
+
+	void Shader::SetMat3(const char *name, const float *value)
+	{
+		glUniformMatrix3fv(glGetUniformLocation(m_id, name), 1, false, value);
+	}
+
+	void Shader::SetMat4(const char *name, const float *value)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(m_id, name), 1, false, value);
+	}
+
+	void Shader::SetIntEx(int32_t location, int32_t value)
+	{
+		glUniform1i(location, value);
+	}
+
+	void Shader::SetUIntEx(int32_t location, uint32_t value)
+	{
+		glUniform1ui(location, value);
+	}
+
+	void Shader::SetFloatEx(int32_t location, float value)
+	{
+		glUniform1f(location, value);
+	}
+
+	void Shader::SetFloat2Ex(int32_t location, const float *value)
+	{
+		glUniform2fv(location, 1, value);
+	}
+
+	void Shader::SetFloat3Ex(int32_t location, const float *value)
+	{
+		glUniform3fv(location, 1, value);
+	}
+
+	void Shader::SetFloat4Ex(int32_t location, const float *value)
+	{
+		glUniform4fv(location, 1, value);
+	}
+
+	void Shader::SetMat2Ex(int32_t location, const float *value)
+	{
+		glUniformMatrix2fv(location, 1, false, value);
+	}
+
+	void Shader::SetMat3Ex(int32_t location, const float *value)
+	{
+		glUniformMatrix3fv(location, 1, false, value);
+	}
+
+	void Shader::SetMat4Ex(int32_t location, const float *value)
+	{
+		glUniformMatrix4fv(location, 1, false, value);
+	}
+
+	ShaderSource Shader::GetScreenShaderSource()
+	{
+		ShaderSource source;
+		source.vertex = R"(#version 330 core
+out vec2 TexCoords;
+
+void main() {
+    // Generates a triangle that covers the [-1, 1] range
+    // Vertex 0: (-1, -1), UV (0, 0)
+    // Vertex 1: ( 3, -1), UV (2, 0)
+    // Vertex 2: (-1,  3), UV (0, 2)
+    
+    float x = -1.0 + float((gl_VertexID & 1) << 2);
+    float y = -1.0 + float((gl_VertexID & 2) << 1);
+    
+    TexCoords.x = (x + 1.0) * 0.5;
+    TexCoords.y = (y + 1.0) * 0.5;
+    
+    gl_Position = vec4(x, y, 0.0, 1.0);
+})";
+
+		source.fragment = R"(#version 330 core
+uniform sampler2D uTexture;
+
+in vec2 TexCoords;
+out vec4 FragColor;
+
+vec3 aces_tonemapping(vec3 color) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0, 1.0);
+}
+
+void main() {
+	vec3 color = texture(uTexture, TexCoords).rgb;
+	color = aces_tonemapping(color);
+	color = pow(color.rgb, vec3(0.454545455));
+	FragColor = vec4(color, 1.0);
+})";
+		return source;
+	}
+}
