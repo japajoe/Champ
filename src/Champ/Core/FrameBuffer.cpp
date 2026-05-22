@@ -405,8 +405,8 @@ namespace Champ
 
     void PingPongBuffer::Swap()
     {
-        auto tmp = src;
-        dst = src;
-        src = tmp;
+		auto tmp = src;
+		src = dst;
+		dst = src;
     }
 }
