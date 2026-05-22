@@ -16,7 +16,8 @@ namespace Champ
         void SetWindowLimits(int32_t minWidth = -1, int32_t minHeight = -1, int32_t maxWidth = -1, int32_t maxHeight = -1);
         void SetTitle(const std::string &title);
         void SetCursor(bool visible);
-
+        void Quit();
+        
     protected:
         virtual void OnLoad();
         virtual void OnDestroy();

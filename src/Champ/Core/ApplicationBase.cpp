@@ -113,6 +113,11 @@ namespace Champ
         glfwSetInputMode(window, GLFW_CURSOR, visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
     }
 
+    void ApplicationBase::Quit()
+    {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+
     void ApplicationBase::OnLoad()
     {
     }
