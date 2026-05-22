@@ -65,15 +65,6 @@ namespace Champ
         }
     }
 
-    Image::Image(const Image &other)
-    {
-        data = other.data;
-        width = other.width;
-        height = other.height;
-        channels = other.channels;
-        hasLoaded = other.hasLoaded;
-    }
-
     Image::Image(Image &&other) noexcept
     {
         data = std::exchange(other.data, nullptr);
@@ -81,19 +72,6 @@ namespace Champ
         height = other.height;
         channels = other.channels;
         hasLoaded = std::exchange(other.hasLoaded, false);
-    }
-
-    Image &Image::operator=(const Image &other)
-    {
-        if (this != &other)
-        {
-            data = other.data;
-            width = other.width;
-            height = other.height;
-            channels = other.channels;
-            hasLoaded = other.hasLoaded;
-        }
-        return *this;
     }
 
     Image &Image::operator=(Image &&other) noexcept

@@ -13,9 +13,9 @@ namespace Champ
         Image(const uint8_t *compressedData, size_t size);
         Image(const uint8_t *uncompressedData, size_t size, uint32_t width, uint32_t height, uint32_t channels);
         Image(uint32_t width, uint32_t height, uint32_t channels, float r, float g, float b, float a);
-        Image(const Image &other);
+        Image(const Image &other) = delete;
         Image(Image &&other) noexcept;
-        Image &operator=(const Image &other);
+        Image &operator=(const Image &other) = delete;
         Image &operator=(Image &&other) noexcept;
         ~Image();
         uint8_t *GetData() const;
