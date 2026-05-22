@@ -3,6 +3,11 @@
 
 namespace Champ
 {
+    PostProcessor::PostProcessor()
+    {
+        
+    }
+
     void PostProcessor::Bind()
     {
         pingpongBuffer->dst->Bind();
