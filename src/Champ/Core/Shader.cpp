@@ -11,6 +11,40 @@
 
 namespace Champ
 {
+	static std::string InjectTargetHeaders(const std::string& shaderSource)
+	{
+		std::string injectedHeader = "";
+
+	#ifdef __EMSCRIPTEN__
+		injectedHeader += "#version 300 es\n";
+		injectedHeader += "precision mediump float;\n"; // Covers: float, vec2, vec3, vec4, mat2, mat3, mat4, etc.
+        injectedHeader += "precision mediump int;\n";   // Covers: int, ivec2, ivec3, ivec4
+        injectedHeader += "precision mediump uint;\n";  // Covers: uint, uvec2, uvec3, uvec4
+		injectedHeader += "#define __EMSCRIPTEN__ 1\n";
+	#else
+		injectedHeader += "#version 330 core\n";
+	#endif
+
+		// Reset the line counter so the original source starts tracking at line 1
+    	injectedHeader += "#line 1\n";
+
+		// Handle existing #version directives in the source to avoid GLSL compilation errors
+		std::string finalSource = shaderSource;
+		size_t versionPos = finalSource.find("#version");
+		
+		if (versionPos != std::string::npos)
+		{
+			size_t lineEnd = finalSource.find("\n", versionPos);
+			if (lineEnd != std::string::npos)
+			{
+				// Remove the original version line so it doesn't conflict with the injected one
+				finalSource.erase(versionPos, lineEnd - versionPos + 1);
+			}
+		}
+
+		return injectedHeader + finalSource;
+	}
+
 	Shader::Shader()
 	{
 		m_id = 0;
@@ -105,8 +139,8 @@ namespace Champ
 
 	void Shader::Generate(const std::string &vertexSource, const std::string &fragmentSource)
 	{
-		std::string sVertex = vertexSource;
-		std::string sFragment = fragmentSource;
+		std::string sVertex = InjectTargetHeaders(vertexSource);
+		std::string sFragment = InjectTargetHeaders(fragmentSource);
 
 		uint32_t vertexShader = CompileShader(sVertex, ShaderType_Vertex);
 		uint32_t fragmentShader = CompileShader(sFragment, ShaderType_Fragment);

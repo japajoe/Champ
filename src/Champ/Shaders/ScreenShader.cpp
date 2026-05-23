@@ -2,8 +2,7 @@
 
 namespace Champ
 {
-    static std::string gVertexSource = R"(#version 330 core
-out vec2 TexCoords;
+    static std::string gVertexSource = R"(out vec2 TexCoords;
 
 void main() {
     // Generates a triangle that covers the [-1, 1] range
@@ -20,8 +19,11 @@ void main() {
     gl_Position = vec4(x, y, 0.0, 1.0);
 })";
 
-    static std::string gFragmentSource = R"(#version 330 core
+    static std::string gFragmentSource = R"(#if __EMSCRIPTEN__
+uniform highp sampler2D uTexture;
+#else
 uniform sampler2D uTexture;
+#endif
 
 in vec2 TexCoords;
 out vec4 FragColor;

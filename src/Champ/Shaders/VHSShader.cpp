@@ -20,12 +20,15 @@ void main() {
     gl_Position = vec4(x, y, 0.0, 1.0);
 })";
 
-    static std::string gFragmentSource = R"(#version 330 core
-out vec4 FragColor;
+    static std::string gFragmentSource = R"(out vec4 FragColor;
 
 in vec2 TexCoords;
 
+#if __EMSCRIPTEN__
+uniform highp sampler2D uTexture;
+#else
 uniform sampler2D uTexture;
+#endif
 uniform float uTime;
 
 float noise(vec2 co)
