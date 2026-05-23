@@ -4,10 +4,15 @@
 #include "OpenGL.hpp"
 #include "Graphics.hpp"
 #include <GLFW/glfw3.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 #include <iostream>
 
 namespace Champ
 {
+    static ApplicationBase *gApplication = nullptr;
+
     ApplicationBase::ApplicationBase(int width, int height, const std::string &title, bool vsync)
     {
         this->width = width;
@@ -15,6 +20,7 @@ namespace Champ
         this->vsync = vsync;
         this->title = title;
         window = nullptr;
+        gApplication = this;
     }
 
     int ApplicationBase::Run()
@@ -30,10 +36,10 @@ namespace Champ
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#else
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
         window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
@@ -55,35 +61,28 @@ namespace Champ
 
         glfwMakeContextCurrent(window);
         glfwSwapInterval(vsync ? 1 : 0);
-
+#ifndef __EMSCRIPTEN__
         if (!OpenGL::Initialize())
         {
             std::cerr << "Failed to initialize GLAD\n";
             glfwTerminate();
             return -1;
         }
+#endif
 
         Graphics::Initialize(width, height, window);
         Input::Initialize(window);
 
         OnLoad();
 
+#ifdef __EMSCRIPTEN__
+        emscripten_set_main_loop(PumpEvents, -1, 1);
+#else
         while (!glfwWindowShouldClose(window))
         {
-            Time::NewFrame();
-            Input::NewFrame();
-            OnUpdate();
-            OnLateUpdate();
-            Graphics::NewFrame();
-            OnRender();
-            Graphics::EndFrame();
-            Graphics::BeginGUI();
-            OnGUI();
-            Graphics::EndGUI();
-            Input::EndFrame();
-            glfwSwapBuffers(window);
-            glfwPollEvents();
+            PumpEvents();
         }
+#endif
 
         OnDestroy();
 
@@ -91,6 +90,30 @@ namespace Champ
 
         glfwTerminate();
         return 0;
+    }
+
+    void ApplicationBase::PumpEvents()
+    {
+        Time::NewFrame();
+        Input::NewFrame();
+        gApplication->OnUpdate();
+        gApplication->OnLateUpdate();
+        Graphics::NewFrame();
+        gApplication->OnRender();
+        Graphics::EndFrame();
+        Graphics::BeginGUI();
+        gApplication->OnGUI();
+        Graphics::EndGUI();
+        Input::EndFrame();
+        glfwSwapBuffers(gApplication->window);
+        glfwPollEvents();
+
+#ifdef __EMSCRIPTEN__
+        if (glfwWindowShouldClose(gApplication->window))
+        {
+            emscripten_cancel_main_loop();
+        }
+#endif
     }
 
     GLFWwindow *ApplicationBase::GetNativeWindow() const
@@ -115,7 +138,9 @@ namespace Champ
 
     void ApplicationBase::Quit()
     {
+#ifndef __EMSCRIPTEN__
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+#endif
     }
 
     void ApplicationBase::OnLoad()

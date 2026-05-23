@@ -55,6 +55,8 @@ namespace Champ
         static Color Cyan();
         static Color Magenta();
         static Color RayWhite();
+        static void SetRandomSeed(uint32_t seed);
+        static Color GetRandom();
         static std::string ToString(const Color &color);
     };
 }

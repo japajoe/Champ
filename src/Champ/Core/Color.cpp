@@ -1,4 +1,5 @@
 #include "Color.hpp"
+#include <random>
 
 namespace Champ
 {
@@ -288,6 +289,25 @@ namespace Champ
     Color Color::RayWhite()
     {
         return Color(245, 245, 245, 255);
+    }
+
+    static std::random_device gRandomDevice;
+    static std::mt19937 gGenerator(gRandomDevice());
+    static std::uniform_real_distribution<float> gDistribution(0.0f, 1.0f);
+
+    void Color::SetRandomSeed(uint32_t seed)
+    {
+        gGenerator.seed(seed);
+    }
+
+    Color Color::GetRandom()
+    {
+        Color color;
+        color.r = gDistribution(gGenerator);
+        color.g = gDistribution(gGenerator);
+        color.b = gDistribution(gGenerator);
+        color.a = 1.0f;
+        return color;
     }
 
     std::string Color::ToString(const Color &color)

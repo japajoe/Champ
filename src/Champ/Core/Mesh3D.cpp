@@ -166,13 +166,20 @@ namespace Champ
         return indices;
     }
 
-    Mesh3D MeshGenerator::CreateCube()
+    static void SetScale(Mesh3D *mesh, const Vector3 &scale)
     {
-        Mesh3D model;
+        auto &vertices = mesh->GetVertices();
+        for(size_t i = 0; i < vertices.size(); i++)
+            vertices[i] *= scale;
+    }
 
-        auto &vertices = model.GetVertices();
-        auto &uvs = model.GetUvs();
-        auto &normals = model.GetNormals();
+    Mesh3D MeshGenerator::CreateCube(const Vector3 &scale)
+    {
+        Mesh3D mesh;
+
+        auto &vertices = mesh.GetVertices();
+        auto &uvs = mesh.GetUvs();
+        auto &normals = mesh.GetNormals();
 
         vertices.resize(24);
         uvs.resize(24);
@@ -238,7 +245,7 @@ namespace Champ
         uvs[22] = Vector2(1.0f, 1.0f);
         uvs[23] = Vector2(1.0f, 0.0f);
 
-        auto &indices = model.GetIndices();
+        auto &indices = mesh.GetIndices();
         indices = {
             0, 2, 3,
             0, 3, 1,
@@ -259,9 +266,10 @@ namespace Champ
             20, 22, 23
         };
 
-        model.GenerateNormals();
-        model.Generate();
+        SetScale(&mesh, scale);
+        mesh.GenerateNormals();
+        mesh.Generate();
 
-        return model;
+        return mesh;
     }
 }

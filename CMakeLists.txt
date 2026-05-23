@@ -35,14 +35,23 @@ set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
 set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
 set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
 
-add_subdirectory(libs/GLFW)
+if(NOT EMSCRIPTEN)
+    add_subdirectory(libs/GLFW)
+endif()
+
 add_subdirectory(libs/glad)
 add_subdirectory(libs/imgui)
 add_subdirectory(libs/stb)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad imgui stb)
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
+    target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1)
+	target_link_libraries(${PROJECT_NAME} PRIVATE glad imgui stb)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad imgui stb)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC 
    ${PROJECT_SOURCE_DIR}/libs/GLFW/include

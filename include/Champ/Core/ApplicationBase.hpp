@@ -32,6 +32,7 @@ namespace Champ
         int height;
         bool vsync;
         std::string title;
+        static void PumpEvents();
         static void FrameBufferSizeCallback(GLFWwindow *window, int width, int height);
         static void KeyPressCallback(GLFWwindow *window, int32_t key, int32_t scancode, int32_t action, int32_t mods);
         static void CharPressCallback(GLFWwindow *window, uint32_t codepoint);
