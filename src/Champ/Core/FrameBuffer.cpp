@@ -6,6 +6,7 @@ namespace Champ
 {
     static constexpr uint32_t MAX_FRAMEBUFFER_SIZE = 8192;
 
+#ifndef __EMSCRIPTEN__
     namespace Utilities
     {
         static bool IsDepthFormat(FrameBufferTextureFormat format)
@@ -396,6 +397,428 @@ namespace Champ
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+#else
+    namespace Utilities
+    {
+        static bool IsDepthFormat(FrameBufferTextureFormat format)
+        {
+            switch (format)
+            {
+            case FrameBufferTextureFormat::Depth24Stencil8:
+            case FrameBufferTextureFormat::Depth32F:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        static GLenum FilterMode(TextureFilterMode filterMode)
+        {
+            switch (filterMode)
+            {
+            case TextureFilterMode::Nearest:
+                return GL_NEAREST;
+            case TextureFilterMode::Linear:
+                return GL_LINEAR;
+            case TextureFilterMode::Trilinear:
+                return GL_LINEAR_MIPMAP_LINEAR;
+            case TextureFilterMode::BilinearMipmap:
+                return GL_LINEAR_MIPMAP_NEAREST;
+            default:
+                return GL_LINEAR;
+            }
+        }
+
+        static GLenum WrapMode(TextureWrapMode wrapMode)
+        {
+            switch (wrapMode)
+            {
+            case TextureWrapMode::Repeat:
+                return GL_REPEAT;
+            case TextureWrapMode::MirroredRepeat:
+                return GL_MIRRORED_REPEAT;
+            case TextureWrapMode::ClampToEdge:
+            case TextureWrapMode::ClampToBorder: // WebGL 2 does not support border clamping, fallback to edge
+                return GL_CLAMP_TO_EDGE;
+            default:
+                return GL_CLAMP_TO_EDGE;
+            }
+        }
+
+        static void CreateTextures(uint32_t *textures, uint32_t count)
+        {
+            glGenTextures(count, textures);
+        }
+
+        static void CreateRenderbuffers(uint32_t *renderbuffers, uint32_t count)
+        {
+            glGenRenderbuffers(count, renderbuffers);
+        }
+
+        static void AttachColor(uint32_t id, uint32_t samples, GLenum internalFormat, GLenum wrapMode, GLenum filterMode, uint32_t width, uint32_t height, uint32_t index)
+        {
+            bool multiSampled = samples > 1;
+
+            if (multiSampled)
+            {
+                glBindRenderbuffer(GL_RENDERBUFFER, id);
+                glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, internalFormat, width, height);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_RENDERBUFFER, id);
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, id);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+                
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
+            }
+        }
+
+        static void AttachDepth(uint32_t id, uint32_t samples, GLenum internalFormat, GLenum attachmentType, GLenum wrapMode, GLenum filterMode, uint32_t width, uint32_t height)
+        {
+            bool multiSampled = samples > 1;
+
+            if (multiSampled)
+            {
+                glBindRenderbuffer(GL_RENDERBUFFER, id);
+                glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, internalFormat, width, height);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachmentType, GL_RENDERBUFFER, id);
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, id);
+                GLenum format = GL_DEPTH_COMPONENT;
+                GLenum type = GL_FLOAT;
+
+                if (internalFormat == GL_DEPTH24_STENCIL8)
+                {
+                    format = GL_DEPTH_STENCIL;
+                    type = GL_UNSIGNED_INT_24_8;
+                }
+
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+
+                glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_2D, id, 0);
+            }
+        }
+    }
+
+    void FrameBuffer::Generate(const FrameBufferSpecification &specification)
+    {
+        this->specification = specification;
+
+        if (colorAttachmentSpecifications.size() > 0)
+            colorAttachmentSpecifications.clear();
+
+        for (const auto &spec : specification.attachments)
+        {
+            if (!Utilities::IsDepthFormat(spec.format))
+            {
+                colorAttachmentSpecifications.emplace_back(spec);
+            }
+            else
+            {
+                depthAttachmentSpecification = spec;
+            }
+        }
+
+        Invalidate();
+    }
+
+    void FrameBuffer::Destroy()
+    {
+        if (id)
+        {
+            glDeleteFramebuffers(1, &id);
+            
+            if (specification.samples > 1)
+            {
+                glDeleteRenderbuffers(colorAttachments.size(), colorAttachments.data());
+                if (depthAttachment)
+                {
+                    glDeleteRenderbuffers(1, &depthAttachment);
+                }
+            }
+            else
+            {
+                glDeleteTextures(colorAttachments.size(), colorAttachments.data());
+                if (depthAttachment)
+                {
+                    glDeleteTextures(1, &depthAttachment);
+                }
+            }
+
+            id = 0;
+            depthAttachment = 0;
+            colorAttachments.clear();
+        }
+    }
+
+    void FrameBuffer::Resize(uint32_t width, uint32_t height)
+    {
+        if (!specification.resizable)
+            return;
+
+        if (width == 0 || height == 0 || width > MAX_FRAMEBUFFER_SIZE || height > MAX_FRAMEBUFFER_SIZE)
+            return;
+
+        specification.width = width;
+        specification.height = height;
+
+        Invalidate();
+    }
+
+    void FrameBuffer::Bind()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+        glViewport(0, 0, specification.width, specification.height);
+    }
+
+    void FrameBuffer::Unbind()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void FrameBuffer::Clear(const Color &color)
+    {
+        GLenum flags = 0;
+
+        if (colorAttachments.size() > 0)
+            flags |= GL_COLOR_BUFFER_BIT;
+        if (depthAttachment)
+            flags |= GL_DEPTH_BUFFER_BIT;
+
+        glClearColor(color.r, color.g, color.b, color.a);
+        glClear(flags);
+    }
+
+    void FrameBuffer::Blit(const FrameBuffer &target, BlitOption options)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, this->id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.id);
+
+        GLbitfield mask = 0;
+
+        if (options & BlitOption_Color)
+        {
+            mask |= GL_COLOR_BUFFER_BIT;
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            
+            // Fix: Use glDrawBuffers with a single element array
+            GLenum buffers[1] = { GL_COLOR_ATTACHMENT0 };
+            glDrawBuffers(1, buffers);
+        }
+
+        if (options & BlitOption_Depth)
+        {
+            mask |= GL_DEPTH_BUFFER_BIT;
+        }
+
+        glBlitFramebuffer(
+            0, 0, specification.width, specification.height,
+            0, 0, target.specification.width, target.specification.height,
+            mask,
+            GL_NEAREST);
+
+        // Reset to default state
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        GLenum defaultBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, defaultBuffers);
+    }
+
+    void FrameBuffer::Blit(const FrameBuffer &target, BlitOption options, uint32_t attachmentIndex)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, this->id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.id);
+
+        GLbitfield mask = 0;
+
+        if (options & BlitOption_Color)
+        {
+            mask |= GL_COLOR_BUFFER_BIT;
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+            
+            // Fix: Use glDrawBuffers with a single element array
+            GLenum buffers[1] = { GL_COLOR_ATTACHMENT0 + attachmentIndex };
+            glDrawBuffers(1, buffers);
+        }
+
+        if (options & BlitOption_Depth)
+        {
+            mask |= GL_DEPTH_BUFFER_BIT;
+        }
+
+        glBlitFramebuffer(
+            0, 0, specification.width, specification.height,
+            0, 0, target.specification.width, target.specification.height,
+            mask,
+            GL_NEAREST);
+
+        // Reset to default state
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        GLenum defaultBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, defaultBuffers);
+    }
+
+    void FrameBuffer::Blit(const FrameBuffer &target, BlitOption options, uint32_t attachmentIndexSource, uint32_t attachmentIndexDestination)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, this->id);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.id);
+
+        GLbitfield mask = 0;
+
+        if (options & BlitOption_Color)
+        {
+            mask |= GL_COLOR_BUFFER_BIT;
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndexSource);
+            
+            // Fix: Use glDrawBuffers with a single element array
+            GLenum buffers[1] = { GL_COLOR_ATTACHMENT0 + attachmentIndexDestination };
+            glDrawBuffers(1, buffers);
+        }
+
+        if (options & BlitOption_Depth)
+        {
+            mask |= GL_DEPTH_BUFFER_BIT;
+        }
+
+        glBlitFramebuffer(
+            0, 0, specification.width, specification.height,
+            0, 0, target.specification.width, target.specification.height,
+            mask,
+            GL_NEAREST);
+
+        // Reset to defaults
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        GLenum defaultBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, defaultBuffers);
+    }
+
+    uint32_t FrameBuffer::GetWidth() const
+    {
+        return specification.width;
+    }
+
+    uint32_t FrameBuffer::GetHeight() const
+    {
+        return specification.height;
+    }
+
+    uint32_t FrameBuffer::GetSamples() const
+    {
+        return specification.samples;
+    }
+
+    uint32_t FrameBuffer::GetColorAttachment(uint32_t index) const
+    {
+        assert(index < colorAttachments.size() && "Color attachment index must be less than the total number of attachments");
+        return colorAttachments[index];
+    }
+
+    uint32_t FrameBuffer::GetDepthAttachment() const
+    {
+        return depthAttachment;
+    }
+
+    void FrameBuffer::Invalidate()
+    {
+        Destroy();
+
+        glGenFramebuffers(1, &id);
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+
+        bool multiSample = specification.samples > 1;
+
+        if (colorAttachmentSpecifications.size())
+        {
+            colorAttachments.resize(colorAttachmentSpecifications.size());
+            
+            if (multiSample)
+            {
+                Utilities::CreateRenderbuffers(colorAttachments.data(), colorAttachments.size());
+            }
+            else
+            {
+                Utilities::CreateTextures(colorAttachments.data(), colorAttachments.size());
+            }
+
+            for (size_t i = 0; i < colorAttachments.size(); i++)
+            {
+                GLenum wrap = Utilities::WrapMode(colorAttachmentSpecifications[i].wrap);
+                GLenum filter = Utilities::FilterMode(colorAttachmentSpecifications[i].filter);
+
+                switch (colorAttachmentSpecifications[i].format)
+                {
+                case FrameBufferTextureFormat::RGBA8:
+                    Utilities::AttachColor(colorAttachments[i], specification.samples, GL_RGBA8, wrap, filter, specification.width, specification.height, i);
+                    break;
+                case FrameBufferTextureFormat::RGBA16F:
+                    Utilities::AttachColor(colorAttachments[i], specification.samples, GL_RGBA16F, wrap, filter, specification.width, specification.height, i);
+                    break;
+                case FrameBufferTextureFormat::RGBA32F:
+                    Utilities::AttachColor(colorAttachments[i], specification.samples, GL_RGBA32F, wrap, filter, specification.width, specification.height, i);
+                    break;
+                case FrameBufferTextureFormat::RG32F:
+                    Utilities::AttachColor(colorAttachments[i], specification.samples, GL_RG32F, wrap, filter, specification.width, specification.height, i);
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        if (depthAttachmentSpecification.format != FrameBufferTextureFormat::None)
+        {
+            if (multiSample)
+            {
+                Utilities::CreateRenderbuffers(&depthAttachment, 1);
+            }
+            else
+            {
+                Utilities::CreateTextures(&depthAttachment, 1);
+            }
+            
+            GLenum wrap = Utilities::WrapMode(depthAttachmentSpecification.wrap);
+            GLenum filter = Utilities::FilterMode(depthAttachmentSpecification.filter);
+
+            switch (depthAttachmentSpecification.format)
+            {
+            case FrameBufferTextureFormat::Depth24Stencil8:
+                Utilities::AttachDepth(depthAttachment, specification.samples, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, wrap, filter, specification.width, specification.height);
+                break;
+            case FrameBufferTextureFormat::Depth32F:
+                Utilities::AttachDepth(depthAttachment, specification.samples, GL_DEPTH_COMPONENT32F, GL_DEPTH_ATTACHMENT, wrap, filter, specification.width, specification.height);
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (colorAttachments.size() >= 1)
+        {
+            assert(colorAttachments.size() <= 4 && "Max 4 color attachments allowed");
+            GLenum buffers[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
+            glDrawBuffers(colorAttachments.size(), buffers);
+        }
+        else
+        {
+            GLenum noneBuffer[1] = { GL_NONE };
+            glDrawBuffers(1, noneBuffer);
+        }
+
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE && "Frame buffer is incomplete");
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+#endif
 
     PingPongBuffer::PingPongBuffer()
     {
@@ -409,4 +832,5 @@ namespace Champ
 		src = dst;
 		dst = tmp;
     }
+
 }

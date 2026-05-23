@@ -19,8 +19,8 @@ void main() {
     gl_Position = vec4(x, y, 0.0, 1.0);
 })";
 
-    static std::string gFragmentSource = R"(#if __EMSCRIPTEN__
-uniform highp sampler2D uTexture;
+    static std::string gFragmentSource = R"(#if EMSCRIPTEN
+uniform sampler2D uTexture;
 #else
 uniform sampler2D uTexture;
 #endif

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 
+
 namespace Champ
 {
     static float gMaxAnisotropy = 0.0f;
@@ -11,11 +12,13 @@ namespace Champ
 
     bool OpenGL::Initialize()
     {
+    #ifndef __EMSCRIPTEN__
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
             return false;
+        glEnable(GL_MULTISAMPLE);
+    #endif
 
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_MULTISAMPLE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gMaxAnisotropy);

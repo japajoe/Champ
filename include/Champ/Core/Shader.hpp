@@ -9,7 +9,6 @@ namespace Champ
 	struct ShaderSource
 	{
 		std::string fragment;
-		std::string geometry;
 		std::string vertex;
 	};
 

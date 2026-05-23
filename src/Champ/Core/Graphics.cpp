@@ -24,8 +24,14 @@ namespace Champ
         gWidth = width;
         gHeight = height;
 
+#ifdef __EMSCRIPTEN__
+        FrameBufferTextureFormat colorFormat = FrameBufferTextureFormat::RGBA8;
+#else
+        FrameBufferTextureFormat colorFormat = FrameBufferTextureFormat::RGBA16F;
+#endif
+
         FrameBufferTextureSpecification colorAttachment = {
-            .format = FrameBufferTextureFormat::RGBA16F,
+            .format = colorFormat,
             .wrap = TextureWrapMode::ClampToEdge,
             .filter = TextureFilterMode::Linear};
 

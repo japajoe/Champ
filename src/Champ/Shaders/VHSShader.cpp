@@ -24,8 +24,8 @@ void main() {
 
 in vec2 TexCoords;
 
-#if __EMSCRIPTEN__
-uniform highp sampler2D uTexture;
+#if EMSCRIPTEN
+uniform sampler2D uTexture;
 #else
 uniform sampler2D uTexture;
 #endif

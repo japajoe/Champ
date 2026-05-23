@@ -19,8 +19,8 @@ void main() {
     gl_Position = vec4(x, y, 0.0, 1.0);
 })";
 
-    static std::string gFragmentSource = R"(#if __EMSCRIPTEN__
-uniform highp sampler2D uTexture;
+    static std::string gFragmentSource = R"(#if EMSCRIPTEN
+uniform sampler2D uTexture;
 #else
 uniform sampler2D uTexture;
 #endif
@@ -30,7 +30,7 @@ in vec2 TexCoords;
 out vec4 FragColor;
 
 void main() {
-    vec2 size = textureSize(uTexture, 0).xy;
+    vec2 size = vec2(textureSize(uTexture, 0));
     
     float dx = uPixelSize * (1.0 / size.x);
     float dy = uPixelSize * (1.0 / size.y);

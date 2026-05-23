@@ -60,8 +60,8 @@ namespace Champ
         glfwSetScrollCallback(window, ScrollCallback);
 
         glfwMakeContextCurrent(window);
-        glfwSwapInterval(vsync ? 1 : 0);
 #ifndef __EMSCRIPTEN__
+        glfwSwapInterval(vsync ? 1 : 0);
         if (!OpenGL::Initialize())
         {
             std::cerr << "Failed to initialize GLAD\n";
@@ -76,7 +76,7 @@ namespace Champ
         OnLoad();
 
 #ifdef __EMSCRIPTEN__
-        emscripten_set_main_loop(PumpEvents, -1, 1);
+        emscripten_set_main_loop(PumpEvents, 0, 1);
 #else
         while (!glfwWindowShouldClose(window))
         {

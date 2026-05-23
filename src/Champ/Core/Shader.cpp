@@ -19,8 +19,7 @@ namespace Champ
 		injectedHeader += "#version 300 es\n";
 		injectedHeader += "precision mediump float;\n"; // Covers: float, vec2, vec3, vec4, mat2, mat3, mat4, etc.
         injectedHeader += "precision mediump int;\n";   // Covers: int, ivec2, ivec3, ivec4
-        injectedHeader += "precision mediump uint;\n";  // Covers: uint, uvec2, uvec3, uvec4
-		injectedHeader += "#define __EMSCRIPTEN__ 1\n";
+		injectedHeader += "#define EMSCRIPTEN 1\n";
 	#else
 		injectedHeader += "#version 330 core\n";
 	#endif
@@ -66,7 +65,6 @@ namespace Champ
 
 	enum ShaderType
 	{
-		ShaderType_Geometry = GL_GEOMETRY_SHADER,
 		ShaderType_Fragment = GL_FRAGMENT_SHADER,
 		ShaderType_Vertex = GL_VERTEX_SHADER
 	};
@@ -88,8 +86,6 @@ namespace Champ
 			glGetShaderInfoLog(shader, 512, nullptr, infoLog);
 			switch (shaderType)
 			{
-			case GL_GEOMETRY_SHADER:
-				throw std::runtime_error("Geometry shader compilation failed: " + std::string(infoLog));
 			case GL_FRAGMENT_SHADER:
 				throw std::runtime_error("Fragment shader compilation failed: " + std::string(infoLog));
 			case GL_VERTEX_SHADER:
@@ -147,7 +143,8 @@ namespace Champ
 
 		uint32_t shaders[2] = {
 			vertexShader,
-			fragmentShader};
+			fragmentShader
+		};
 
 		m_id = CreateAndLinkProgram(shaders, 2);
 	}
