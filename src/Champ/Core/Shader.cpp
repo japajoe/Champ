@@ -16,23 +16,9 @@ namespace Champ
 		m_id = 0;
 	}
 
-	Shader::Shader(const Shader &other)
-	{
-		m_id = other.m_id;
-	}
-
 	Shader::Shader(Shader &&other) noexcept
 	{
 		m_id = std::exchange(other.m_id, 0);
-	}
-
-	Shader &Shader::operator=(const Shader &other)
-	{
-		if (this != &other)
-		{
-			m_id = other.m_id;
-		}
-		return *this;
 	}
 
 	Shader &Shader::operator=(Shader &&other) noexcept

@@ -41,7 +41,9 @@ namespace Champ
             .attachments = {
                 colorAttachment, // Main color
                 colorAttachment, // Brightness
-                depthAttachment}};
+                depthAttachment
+            }
+        };
 
         FrameBufferSpecification specScreen1 = {
             .width = (uint32_t)gWidth,
@@ -51,7 +53,9 @@ namespace Champ
             .attachments = {
                 colorAttachment, // Main color
                 colorAttachment, // Brightness
-                depthAttachment}};
+                depthAttachment
+            }
+        };
 
         FrameBufferSpecification specScreen2 = {
             .width = (uint32_t)gWidth,
@@ -60,7 +64,9 @@ namespace Champ
             .resizable = true,
             .attachments = {
                 colorAttachment, // Main color
-            }};
+            }
+        };
+
 
         gFramebuffers.resize(3);
 

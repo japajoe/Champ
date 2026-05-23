@@ -25,29 +25,11 @@ namespace Champ
         this->height = height;
     }
 
-    Texture2D::Texture2D(const Texture2D &other)
-    {
-        id = other.id;
-        width = other.width;
-        height = other.height;
-    }
-
     Texture2D::Texture2D(Texture2D &&other) noexcept
     {
         id = std::exchange(other.id, 0);
         width = std::exchange(other.width, 0);
         height = std::exchange(other.height, 0);
-    }
-
-    Texture2D &Texture2D::operator=(const Texture2D &other)
-    {
-        if (this != &other)
-        {
-            id = other.id;
-            width = other.width;
-            height = other.height;
-        }
-        return *this;
     }
 
     Texture2D &Texture2D::operator=(Texture2D &&other) noexcept

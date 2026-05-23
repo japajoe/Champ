@@ -14,9 +14,9 @@ namespace Champ
     public:
         Texture2D();
         Texture2D(uint32_t id, uint32_t width, uint32_t height);
-        Texture2D(const Texture2D &other);
+        Texture2D(const Texture2D &other) = delete;
         Texture2D(Texture2D &&other) noexcept;
-        Texture2D &operator=(const Texture2D &other);
+        Texture2D &operator=(const Texture2D &other) = delete;
         Texture2D &operator=(Texture2D &&other) noexcept;
         void Generate(const Image *img, const TextureSettings *settings = nullptr);
         void Generate(uint32_t width, uint32_t height, const Color &color);

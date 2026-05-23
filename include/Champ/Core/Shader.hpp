@@ -17,9 +17,9 @@ namespace Champ
 	{
 	public:
 		Shader();
-		Shader(const Shader &other);
+		Shader(const Shader &other) = delete;
 		Shader(Shader &&other) noexcept;
-		Shader &operator=(const Shader &other);
+		Shader &operator=(const Shader &other) = delete;
 		Shader &operator=(Shader &&other) noexcept;
 		void Generate(const std::string &vertexSource, const std::string &fragmentSource);
 		void Destroy();
