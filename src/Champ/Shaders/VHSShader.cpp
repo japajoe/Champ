@@ -20,24 +20,17 @@ void main() {
     gl_Position = vec4(x, y, 0.0, 1.0);
 })";
 
-    static std::string gFragmentSource = R"(out vec4 FragColor;
-
-in vec2 TexCoords;
-
-#if EMSCRIPTEN
-uniform sampler2D uTexture;
-#else
-uniform sampler2D uTexture;
-#endif
+    static std::string gFragmentSource = R"(uniform sampler2D uTexture;
 uniform float uTime;
 
-float noise(vec2 co)
-{
+in vec2 TexCoords;
+out vec4 FragColor;
+
+float noise(vec2 co) {
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-void main()
-{
+void main() {
     vec2 uv = TexCoords;
     
     // 1. Horizontal jitter/shaking line distortion
@@ -45,8 +38,7 @@ void main()
     float drift = sin(uv.y * 10.0 + jitterTime) * 0.003;
     float trackingNoise = step(0.05, noise(vec2(uTime, uv.y))) * 0.005;
     
-    if (noise(vec2(uTime, uv.y * 20.0)) > 0.98)
-    {
+    if (noise(vec2(uTime, uv.y * 20.0)) > 0.98) {
         uv.x += drift + trackingNoise;
     }
 
