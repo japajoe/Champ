@@ -33,4 +33,9 @@ namespace Champ
     {
         isActive = active;
     }
+
+    uint32_t PostProcessor::GetInputTexture() const
+    {
+        return pingpongBuffer->src->GetColorAttachment(0);
+    }
 }

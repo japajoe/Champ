@@ -7,6 +7,7 @@
 
 namespace Champ
 {
+    /// @brief Base class for post processing effects. Typically you call `Bind`, then `shader->Use`, followed by `Render` and `SwapBuffers`.
     class PostProcessor
     {
     friend class Graphics;
@@ -23,6 +24,7 @@ namespace Champ
         void Bind();
         void Render();
         void SwapBuffers();
+        uint32_t GetInputTexture() const;
     private:
         uint32_t vao;
     };
