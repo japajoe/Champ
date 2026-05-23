@@ -2,6 +2,7 @@
 #include "OpenGL.hpp"
 #include "Shader.hpp"
 #include "FrameBuffer.hpp"
+#include "../Shaders/ScreenShader.hpp"
 #include <imgui/imgui_manager.h>
 #include <cstdint>
 #include <vector>
@@ -76,10 +77,9 @@ namespace Champ
 
         glGenVertexArrays(1, &gScreenVAO);
 
-        ShaderSource screenShaderSource = Shader::GetScreenShaderSource();
         try
         {
-            gScreenShader.Generate(screenShaderSource.vertex, screenShaderSource.fragment);
+            gScreenShader.Generate(ScreenShader::GetVertexSource(), ScreenShader::GetFragmentSource());
         }
         catch (const std::exception &ex)
         {

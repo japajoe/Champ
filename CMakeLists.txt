@@ -25,6 +25,8 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include/Champ"
     "${PROJECT_SOURCE_DIR}/include/Champ/Core"
+    "${PROJECT_SOURCE_DIR}/include/Champ/PostProcessing"
+    "${PROJECT_SOURCE_DIR}/include/Champ/Shaders"
 )
 
 # GLFW settings

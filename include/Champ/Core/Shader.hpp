@@ -42,8 +42,6 @@ namespace Champ
 		void SetMat2Ex(int32_t location, const float *value);
 		void SetMat3Ex(int32_t location, const float *value);
 		void SetMat4Ex(int32_t location, const float *value);
-		static ShaderSource GetScreenShaderSource();
-
 	private:
 		uint32_t m_id;
 	};
