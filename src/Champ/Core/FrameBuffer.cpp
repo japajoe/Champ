@@ -407,6 +407,6 @@ namespace Champ
     {
 		auto tmp = src;
 		src = dst;
-		dst = src;
+		dst = tmp;
     }
 }

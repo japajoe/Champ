@@ -45,6 +45,7 @@ add_subdirectory(libs/stb)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
+# Doesn't compile yet on emscripten
 if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
     target_link_options(${PROJECT_NAME} PRIVATE -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1)
