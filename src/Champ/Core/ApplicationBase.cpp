@@ -3,6 +3,7 @@
 #include "Input.hpp"
 #include "OpenGL.hpp"
 #include "Graphics.hpp"
+#include "../Utilities/File.hpp"
 #include <GLFW/glfw3.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -62,13 +63,13 @@ namespace Champ
         glfwMakeContextCurrent(window);
 #ifndef __EMSCRIPTEN__
         glfwSwapInterval(vsync ? 1 : 0);
+#endif
         if (!OpenGL::Initialize())
         {
-            std::cerr << "Failed to initialize GLAD\n";
+            std::cerr << "Failed to initialize OpenGL\n";
             glfwTerminate();
             return -1;
         }
-#endif
 
         Graphics::Initialize(width, height, window);
         Input::Initialize(window);
@@ -104,6 +105,7 @@ namespace Champ
         Graphics::BeginGUI();
         gApplication->OnGUI();
         Graphics::EndGUI();
+        File::NewFrame();
         Input::EndFrame();
         glfwSwapBuffers(gApplication->window);
         glfwPollEvents();

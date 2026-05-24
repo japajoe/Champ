@@ -5,14 +5,31 @@
 #include <sstream>
 #include <algorithm>
 #include <ranges>
+#include <future>
+#include "ConcurrentQueue.hpp"
+#ifdef __EMSCRIPTEN__
+#include <emscripten/fetch.h>
+#include <cstring>
+#endif
 
 namespace fs = std::filesystem;
 
 namespace Champ
 {
+	struct QueuedFile
+	{
+		uint8_t *data;
+		uint64_t size;
+		void *userData;
+	};
+
+	static ConcurrentQueue<QueuedFile> gFileQueue;
+
     static const char DirectorySeparatorChar = '\\';
     static const char AltDirectorySeparatorChar = '/';
     static const char VolumeSeparatorChar = ':';
+
+	FileLoadEvent File::onLoad = nullptr;
 
 	bool File::Exists(const std::string &filePath)
 	{
@@ -202,5 +219,123 @@ namespace Champ
 		
 		// parent_path() extracts the directory part
 		return p.parent_path().string();
+	}
+
+	static uint8_t *ReadFileBytes(FILE *file, uint64_t *size) 
+	{
+		if (!file) 
+			return nullptr;
+
+		if (fseek(file, 0, SEEK_END) != 0) 
+		{ 
+			fclose(file); 
+			return nullptr; 
+		}
+
+		long fileSize = ftell(file);
+		
+		if (fileSize < 0) 
+		{ 
+			fclose(file); 
+			return nullptr; 
+		}
+		
+		rewind(file);
+
+		uint8_t *buf = (uint8_t*)malloc((size_t)fileSize);
+		if (!buf) 
+		{ 
+			fclose(file); 
+			return nullptr; 
+		}
+
+		size_t read = fread(buf, 1, (size_t)fileSize, file);
+		
+		if (read != (size_t)fileSize) 
+		{
+			free(buf);
+			fclose(file);
+			return nullptr;
+		}
+
+		fclose(file);
+		if (size) 
+			*size = (uint64_t)fileSize;
+		return buf;
+	}
+
+#ifdef __EMSCRIPTEN__
+
+    static void OnFetchSuccess(emscripten_fetch_t *fetch)
+    {
+        if(File::onLoad)
+            File::onLoad(fetch->data, fetch->numBytes, fetch->userData);
+        emscripten_fetch_close(fetch);
+    }
+
+    static void OnFetchFailure(emscripten_fetch_t *fetch)
+    {
+        if(File::onLoad)
+            File::onLoad(nullptr, 0, fetch->userData);
+        emscripten_fetch_close(fetch);
+    }
+
+	bool File::ReadAllBytesAsync(const std::string &filePath, void *userData)
+	{
+        emscripten_fetch_attr_t attr;
+        emscripten_fetch_attr_init(&attr);
+        std::strcpy(attr.requestMethod, "GET");
+
+        attr.userData = userData;
+
+        // EMSCRIPTEN_FETCH_LOAD_TO_MEMORY stores data in the fetch->data buffer
+        attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+        attr.onsuccess = OnFetchSuccess;
+        attr.onerror = OnFetchFailure;
+
+        emscripten_fetch_t *fetch = emscripten_fetch(&attr, filePath.c_str());
+
+        if (fetch == nullptr)
+        {
+            return false;
+        }
+
+        return true;
+	}
+#else
+    bool File::ReadAllBytesAsync(const std::string &filePath, void *userData)
+    {
+        if(!File::Exists(filePath))
+            return false;
+
+		auto func = [&] () -> void {
+			FILE *file = fopen(filePath.c_str(), "rb");
+			QueuedFile f;
+			f.data = ReadFileBytes(file, &f.size);
+			if(f.size < 0)
+				f.size = 0;
+			f.userData = userData;
+			gFileQueue.Enqueue(f);
+		};
+		
+		auto result = std::async(std::launch::async, func);
+
+		return true;
+    }
+#endif
+
+	void File::NewFrame()
+	{
+		if(gFileQueue.GetSize() > 0)
+		{
+			QueuedFile f;
+			if(gFileQueue.TryDequeue(f))
+			{
+				if (File::onLoad)
+					File::onLoad(f.data, f.size, f.userData);
+				if(f.data)
+					free(f.data);
+			}
+		}
 	}
 }
