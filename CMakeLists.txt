@@ -27,6 +27,7 @@ include_directories(
     "${PROJECT_SOURCE_DIR}/include/Champ/Core"
     "${PROJECT_SOURCE_DIR}/include/Champ/PostProcessing"
     "${PROJECT_SOURCE_DIR}/include/Champ/Shaders"
+    "${PROJECT_SOURCE_DIR}/include/Champ/Utilities"
 )
 
 # GLFW settings
@@ -46,8 +47,8 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 # Compiles, but still errors that need to be fixed
 if(EMSCRIPTEN)
-    target_link_options(${PROJECT_NAME} INTERFACE -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1 -sNO_DISABLE_EXCEPTION_CATCHING)
-	target_link_libraries(${PROJECT_NAME} PRIVATE glad imgui stb)
+    target_link_options(${PROJECT_NAME} INTERFACE -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1 -sNO_DISABLE_EXCEPTION_CATCHING -sFETCH)
+	target_link_libraries(${PROJECT_NAME} PRIVATE imgui stb)
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad imgui stb)
 endif()

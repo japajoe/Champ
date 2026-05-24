@@ -4,6 +4,7 @@
 #include <cstring>
 #include <utility>
 #include <stdexcept>
+#include <iostream>
 
 #ifndef GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
@@ -11,6 +12,44 @@
 
 namespace Champ
 {
+    static void GetFormat(uint32_t channels, GLint *internalFormat, GLenum *format)
+    {
+        channels--;
+#ifdef __EMSCRIPTEN__
+        GLint internalFormats[] = {
+            GL_R8,
+            GL_RG8,
+            GL_RGB8,
+            GL_RGBA8,
+        };
+#else
+        GLint internalFormats[] = {
+            GL_RGBA,
+            GL_RGBA,
+            GL_RGBA,
+            GL_RGBA,
+        };
+#endif
+
+        GLint formats[] = {
+            GL_RED,
+            GL_RG,
+            GL_RGB,
+            GL_RGBA,
+        };
+
+        if(channels < 0 || channels > 3)
+        {
+            *internalFormat = internalFormats[3];
+            *format = formats[3];
+        }
+        else
+        {
+            *internalFormat = internalFormats[channels];
+            *format = formats[channels];
+        }
+    }
+
     Texture2D::Texture2D()
     {
         id = 0;
@@ -141,26 +180,30 @@ namespace Champ
 
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+            GLint internalFormat;
+            GLenum format;
+            GetFormat(channels, &internalFormat, &format);
+
             switch (channels)
             {
             case 1:
             {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
                 break;
             }
             case 2:
             {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
                 break;
             }
             case 3:
             {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
                 break;
             }
             case 4:
             {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
                 break;
             }
             default:
@@ -176,11 +219,15 @@ namespace Champ
             if (!settings)
             {
                 glGenerateMipmap(GL_TEXTURE_2D);
+                std::cout << "Generate mip maps [1]\n";
             }
             else
             {
                 if (settings->minFilter == TextureFilterMode::Trilinear || settings->minFilter == TextureFilterMode::BilinearMipmap)
+                {
                     glGenerateMipmap(GL_TEXTURE_2D);
+                    std::cout << "Generate mip maps [2]\n";
+                }
             }
 
             glBindTexture(GL_TEXTURE_2D, 0);
