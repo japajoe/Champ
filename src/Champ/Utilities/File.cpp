@@ -284,7 +284,7 @@ namespace Champ
 		delete file;
     }
 
-	bool File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
+	void File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
 	{
         emscripten_fetch_attr_t attr;
         emscripten_fetch_attr_init(&attr);
@@ -307,16 +307,19 @@ namespace Champ
 
         if (fetch == nullptr)
         {
-            return false;
+			if(callback)
+				callback(nullptr, 0, userData);
         }
-
-        return true;
 	}
 #else
-    bool File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
+    void File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
     {
         if(!File::Exists(filePath))
-            return false;
+        {
+			if(callback)
+				callback(nullptr, 0, userData);
+			return;
+		}
 
 		auto func = [&] () -> void {
 			QueuedFile f;
@@ -329,8 +332,6 @@ namespace Champ
 		};
 		
 		auto result = std::async(std::launch::async, func);
-
-		return true;
     }
 #endif
 

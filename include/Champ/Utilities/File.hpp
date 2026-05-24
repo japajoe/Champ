@@ -25,7 +25,7 @@ namespace Champ
 		static std::string GetName(const std::string &filePath, bool withExtension);
 		static std::string GetExtension(const std::string &filePath);
 		static std::string GetDirectoryPath(const std::string &filePath);
-		static bool ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData);
+		static void ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData);
 	private:
 		static void NewFrame();
 	};

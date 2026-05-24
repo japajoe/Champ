@@ -219,14 +219,12 @@ namespace Champ
             if (!settings)
             {
                 glGenerateMipmap(GL_TEXTURE_2D);
-                std::cout << "Generate mip maps [1]\n";
             }
             else
             {
                 if (settings->minFilter == TextureFilterMode::Trilinear || settings->minFilter == TextureFilterMode::BilinearMipmap)
                 {
                     glGenerateMipmap(GL_TEXTURE_2D);
-                    std::cout << "Generate mip maps [2]\n";
                 }
             }
 
