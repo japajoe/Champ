@@ -20,6 +20,7 @@ namespace Champ
 	{
 		uint8_t *data;
 		uint64_t size;
+		FileLoadCallback callback;
 		void *userData;
 	};
 
@@ -28,8 +29,6 @@ namespace Champ
     static const char DirectorySeparatorChar = '\\';
     static const char AltDirectorySeparatorChar = '/';
     static const char VolumeSeparatorChar = ':';
-
-	FileLoadEvent File::onLoad = nullptr;
 
 	bool File::Exists(const std::string &filePath)
 	{
@@ -221,8 +220,10 @@ namespace Champ
 		return p.parent_path().string();
 	}
 
-	static uint8_t *ReadFileBytes(FILE *file, uint64_t *size) 
+	static uint8_t *ReadFileBytes(const char *filePath, uint64_t *size) 
 	{
+		FILE *file = fopen(filePath, "rb");
+
 		if (!file) 
 			return nullptr;
 
@@ -265,28 +266,37 @@ namespace Champ
 	}
 
 #ifdef __EMSCRIPTEN__
-
     static void OnFetchSuccess(emscripten_fetch_t *fetch)
     {
-        if(File::onLoad)
-            File::onLoad(fetch->data, fetch->numBytes, fetch->userData);
+		QueuedFile *file = static_cast<QueuedFile*>(fetch->userData);
+        if(file->callback)
+            file->callback(fetch->data, fetch->numBytes, file->userData);
         emscripten_fetch_close(fetch);
+		delete file;
     }
 
     static void OnFetchFailure(emscripten_fetch_t *fetch)
     {
-        if(File::onLoad)
-            File::onLoad(nullptr, 0, fetch->userData);
+		QueuedFile *file = static_cast<QueuedFile*>(fetch->userData);
+        if(file->callback)
+            file->callback(nullptr, 0, file->userData);
         emscripten_fetch_close(fetch);
+		delete file;
     }
 
-	bool File::ReadAllBytesAsync(const std::string &filePath, void *userData)
+	bool File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
 	{
         emscripten_fetch_attr_t attr;
         emscripten_fetch_attr_init(&attr);
         std::strcpy(attr.requestMethod, "GET");
 
-        attr.userData = userData;
+		QueuedFile *file = new QueuedFile();
+		file->callback = callback;
+		file->data = nullptr;
+		file->size = 0;
+		file->userData = userData;
+        
+		attr.userData = file;
 
         // EMSCRIPTEN_FETCH_LOAD_TO_MEMORY stores data in the fetch->data buffer
         attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
@@ -303,17 +313,17 @@ namespace Champ
         return true;
 	}
 #else
-    bool File::ReadAllBytesAsync(const std::string &filePath, void *userData)
+    bool File::ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData)
     {
         if(!File::Exists(filePath))
             return false;
 
 		auto func = [&] () -> void {
-			FILE *file = fopen(filePath.c_str(), "rb");
 			QueuedFile f;
-			f.data = ReadFileBytes(file, &f.size);
+			f.data = ReadFileBytes(filePath.c_str(), &f.size);
 			if(f.size < 0)
 				f.size = 0;
+			f.callback = callback;
 			f.userData = userData;
 			gFileQueue.Enqueue(f);
 		};
@@ -331,8 +341,8 @@ namespace Champ
 			QueuedFile f;
 			if(gFileQueue.TryDequeue(f))
 			{
-				if (File::onLoad)
-					File::onLoad(f.data, f.size, f.userData);
+				if(f.callback)
+					f.callback(f.data, f.size, f.userData);
 				if(f.data)
 					free(f.data);
 			}

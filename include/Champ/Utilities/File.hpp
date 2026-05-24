@@ -7,13 +7,12 @@
 
 namespace Champ
 {
-	using FileLoadEvent = std::function<void(const void *data, uint64_t size, void *userData)>;
+	using FileLoadCallback = std::function<void(const void *data, uint64_t size, void *userData)>;
 
 	class File
 	{
 	friend class ApplicationBase;
 	public:
-		static FileLoadEvent onLoad;
 		static bool Exists(const std::string &filePath);
 		static bool WriteAllText(const std::string &filePath, const std::string &text);
 		static bool WriteAllBytes(const std::string &filePath, const void *data, size_t size);
@@ -26,7 +25,7 @@ namespace Champ
 		static std::string GetName(const std::string &filePath, bool withExtension);
 		static std::string GetExtension(const std::string &filePath);
 		static std::string GetDirectoryPath(const std::string &filePath);
-		static bool ReadAllBytesAsync(const std::string &filePath, void *userData);
+		static bool ReadAllBytesAsync(const std::string &filePath, FileLoadCallback callback, void *userData);
 	private:
 		static void NewFrame();
 	};
