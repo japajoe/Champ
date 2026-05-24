@@ -34,7 +34,7 @@ if(NOT EMSCRIPTEN)
     set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
     set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
     set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
-    set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
+    set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target") 
     add_subdirectory(libs/GLFW)
 endif()
 
@@ -46,7 +46,6 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 # Compiles, but still errors that need to be fixed
 if(EMSCRIPTEN)
-    set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
     target_link_options(${PROJECT_NAME} INTERFACE -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1 -sNO_DISABLE_EXCEPTION_CATCHING)
 	target_link_libraries(${PROJECT_NAME} PRIVATE glad imgui stb)
 else()
