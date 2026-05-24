@@ -162,6 +162,6 @@ void main(){
 
     std::string VHSShader::GetFragmentSource()
     {
-        return gFragmentSource;
+        return gFragmentSource2;
     }
 }
