@@ -45,6 +45,10 @@ namespace Champ
     class MeshGenerator
     {
     public:
+        static Mesh3D CreateCapsule(const Vector3 &scale);
         static Mesh3D CreateCube(const Vector3 &scale);
+        static Mesh3D CreateCylinder(const Vector3 &scale);
+        static Mesh3D CreatePlane(const Vector3 &scale);
+        static Mesh3D CreateSphere(const Vector3 &scale);
     };
 }

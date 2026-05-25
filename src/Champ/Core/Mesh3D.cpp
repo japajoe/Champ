@@ -173,6 +173,155 @@ namespace Champ
             vertices[i] *= scale;
     }
 
+    static Vector3 PointOnSpheroid(float radius, float height, float horizontalAngle, float verticalAngle)
+    {
+        float horizontalRadians = glm::radians(horizontalAngle);
+        float verticalRadians = glm::radians(verticalAngle);
+        float cosVertical = glm::cos(verticalRadians);
+
+        return Vector3(
+            radius * glm::sin(horizontalRadians) * cosVertical,
+            height * glm::sin(verticalRadians),
+            radius * glm::cos(horizontalRadians) * cosVertical);
+    }
+
+    static Vector3 PointOnSphere(float radius, float horizontalAngle, float verticalAngle)
+    {
+        return PointOnSpheroid(radius, radius, horizontalAngle, verticalAngle);
+    }
+
+    Mesh3D MeshGenerator::CreateCapsule(const Vector3 &scale)
+    {
+        Mesh3D mesh;
+
+        auto &vertices = mesh.GetVertices();
+        auto &uvs = mesh.GetUvs();
+        auto &normals = mesh.GetNormals();
+        auto &indices = mesh.GetIndices();
+
+        const float height = 2.0f;
+        const float radius = 0.5f;   
+        const uint32_t segments = 32;
+        const uint32_t rings = 8;
+        const float cylinderHeight = height - radius * 2;
+        const uint32_t vertexCount = 2 * rings * segments + 2;
+        const uint32_t triangleCount = 4 * rings * segments;
+        const float horizontalAngle = 360.0f / segments;
+        const float verticalAngle = 90.0f / rings;
+
+        vertices.resize(vertexCount);
+		normals.resize(vertexCount);
+		uvs.resize(vertexCount);
+        indices.resize(3 * triangleCount);
+
+        uint32_t vi = 2;
+        uint32_t ti = 0;
+        uint32_t topCapIndex = 0;
+        uint32_t bottomCapIndex = 1;
+
+        vertices[topCapIndex] = Vector3(0, cylinderHeight / 2 + radius, 0);
+        normals[topCapIndex] = Vector3(0, 1, 0);
+        vertices[bottomCapIndex] = Vector3(0, -cylinderHeight / 2 - radius, 0);
+        normals[bottomCapIndex] = Vector3(0, -1, 0);
+
+        for (uint32_t s = 0; s < segments; s++)
+        {
+            for (uint32_t r = 1; r <= rings; r++)
+            {
+                // Top cap vertex
+                Vector3 normal = PointOnSphere(1, s*horizontalAngle, 90 - r * verticalAngle);
+                Vector3 vertex = Vector3(radius*normal.x, radius * normal.y + cylinderHeight / 2, radius * normal.z);
+                vertices[vi] = vertex;
+                normals[vi] = normal;
+                vi++;
+
+                // Bottom cap vertex
+                vertices[vi] = Vector3(vertex.x, -vertex.y, vertex.z);
+                normals[vi] = Vector3(normal.x, -normal.y, normal.z);
+                vi++;
+
+                uint32_t top_s1r1 = vi - 2;
+                uint32_t top_s1r0 = vi - 4;
+                uint32_t bot_s1r1 = vi - 1;
+                uint32_t bot_s1r0 = vi - 3;
+                uint32_t top_s0r1 = top_s1r1 - 2 * rings;
+                uint32_t top_s0r0 = top_s1r0 - 2 * rings;
+                uint32_t bot_s0r1 = bot_s1r1 - 2 * rings;
+                uint32_t bot_s0r0 = bot_s1r0 - 2 * rings;
+
+                if (s == 0)
+                {
+                    top_s0r1 += vertexCount - 2;
+                    top_s0r0 += vertexCount - 2;
+                    bot_s0r1 += vertexCount - 2;
+                    bot_s0r0 += vertexCount - 2;
+                }
+
+                // Create cap triangles
+                if (r == 1)
+                {
+                    indices[3 * ti + 0] = topCapIndex;
+                    indices[3 * ti + 1] = top_s0r1;
+                    indices[3 * ti + 2] = top_s1r1;
+                    ti++;
+
+                    indices[3 * ti + 0] = bottomCapIndex;
+                    indices[3 * ti + 1] = bot_s1r1;
+                    indices[3 * ti + 2] = bot_s0r1;
+                    ti++;
+                }
+                else
+                {
+                    indices[3 * ti + 0] = top_s1r0;
+                    indices[3 * ti + 1] = top_s0r0;
+                    indices[3 * ti + 2] = top_s1r1;
+                    ti++;
+
+                    indices[3 * ti + 0] = top_s0r0;
+                    indices[3 * ti + 1] = top_s0r1;
+                    indices[3 * ti + 2] = top_s1r1;
+                    ti++;
+
+                    indices[3 * ti + 0] = bot_s0r1;
+                    indices[3 * ti + 1] = bot_s0r0;
+                    indices[3 * ti + 2] = bot_s1r1;
+                    ti++;
+
+                    indices[3 * ti + 0] = bot_s0r0;
+                    indices[3 * ti + 1] = bot_s1r0;
+                    indices[3 * ti + 2] = bot_s1r1;
+                    ti++;
+                }
+            }
+
+            // Create side triangles
+            uint32_t top_s1 = vi - 2;
+            uint32_t top_s0 = top_s1 - 2 * rings;
+            uint32_t bot_s1 = vi - 1;
+            uint32_t bot_s0 = bot_s1 - 2 * rings;
+            
+            if (s == 0)
+            {
+                top_s0 += vertexCount - 2;
+                bot_s0 += vertexCount - 2;
+            }
+
+            indices[3 * ti + 0] = top_s0;
+            indices[3 * ti + 1] = bot_s1;
+            indices[3 * ti + 2] = top_s1;
+            ti++;
+
+            indices[3 * ti + 0] = bot_s0;
+            indices[3 * ti + 1] = bot_s1;
+            indices[3 * ti + 2] = top_s0;
+            ti++;
+        }
+
+        SetScale(&mesh, scale);
+        mesh.Generate();
+        return mesh;
+    }
+
     Mesh3D MeshGenerator::CreateCube(const Vector3 &scale)
     {
         Mesh3D mesh;
@@ -180,6 +329,7 @@ namespace Champ
         auto &vertices = mesh.GetVertices();
         auto &uvs = mesh.GetUvs();
         auto &normals = mesh.GetNormals();
+        auto &indices = mesh.GetIndices();
 
         vertices.resize(24);
         uvs.resize(24);
@@ -245,7 +395,7 @@ namespace Champ
         uvs[22] = Vector2(1.0f, 1.0f);
         uvs[23] = Vector2(1.0f, 0.0f);
 
-        auto &indices = mesh.GetIndices();
+        
         indices = {
             0, 2, 3,
             0, 3, 1,
@@ -269,7 +419,223 @@ namespace Champ
         SetScale(&mesh, scale);
         mesh.GenerateNormals();
         mesh.Generate();
+        return mesh;
+    }
 
+    Mesh3D MeshGenerator::CreateCylinder(const Vector3 &scale)
+    {
+        Mesh3D mesh;
+
+        auto &vertices = mesh.GetVertices();
+        auto &uvs = mesh.GetUvs();
+        auto &normals = mesh.GetNormals();
+        auto &indices = mesh.GetIndices();
+
+		const float height = 1.0f;
+		const float radius = 0.5f;
+		const uint32_t slices = 12;
+		const float halfHeight = height / 2.0f;
+
+		// Generate the side vertices.
+		for (uint32_t slice = 0; slice <= slices; slice++) 
+		{
+			const float angle = slice * glm::tau<float>() / slices;
+			const float x = glm::cos(angle) * (radius / 2.0f);
+			const float z = glm::sin(angle) * (radius / 2.0f);
+			const float u = (float) slice / slices;
+
+			// Bottom vertex.
+			vertices.push_back(Vector3(x, -halfHeight, z));
+			normals.push_back(glm::normalize(Vector3(x, 0.0f, z)));
+			uvs.push_back(Vector2(u, 1.0f));
+
+			// Top vertex.
+			vertices.push_back(Vector3(x, halfHeight, z));
+			normals.push_back(glm::normalize(Vector3(x, 0.0f, z)));
+			uvs.push_back(Vector2(u, 0.0F));
+		}
+
+		// Generate the side indices with flipped winding order.
+		for (uint32_t slice = 0; slice < slices; slice++) 
+		{
+			uint32_t baseIndex = slice * 2;
+			uint32_t nextIndex = (slice + 1) * 2;
+
+			// Flip the winding order: swap the order of the indices
+			indices.push_back(baseIndex);
+			indices.push_back(baseIndex + 1);
+			indices.push_back(nextIndex);
+
+			indices.push_back(nextIndex);
+			indices.push_back(baseIndex + 1);
+			indices.push_back(nextIndex + 1);
+		}
+
+		// Generate the bottom cap with flipped winding order.
+		const size_t bottomCenterIndex = vertices.size();
+
+		vertices.push_back(Vector3(0, -halfHeight, 0));
+		normals.push_back(Vector3(0, -1, 0));
+		uvs.push_back(Vector2(0.5f, 0.5f));
+
+		for (uint32_t slice = 0; slice < slices; slice++) 
+		{
+			uint32_t baseIndex = slice * 2;
+
+			// Flip the winding order
+			indices.push_back(bottomCenterIndex);
+			indices.push_back(baseIndex);
+			indices.push_back(baseIndex + 2);
+		}
+
+		// Generate the top cap with flipped winding order.
+		const size_t topCenterIndex = vertices.size();
+
+		vertices.push_back(Vector3(0, halfHeight, 0));
+		normals.push_back(Vector3(0, 1, 0));
+		uvs.push_back(Vector2(0.5f, 0.5f));
+
+		for (uint32_t slice = 0; slice < slices; slice++) 
+		{
+			uint32_t baseIndex = slice * 2 + 1;
+
+			// Flip the winding order
+			indices.push_back(topCenterIndex);
+			indices.push_back(baseIndex + 2);
+			indices.push_back(baseIndex);
+		}
+
+        SetScale(&mesh, scale);
+        mesh.Generate();
+        return mesh;
+    }
+
+    Mesh3D MeshGenerator::CreatePlane(const Vector3 &scale)
+    {
+        Mesh3D mesh;
+        auto &vertices = mesh.GetVertices();
+        auto &uvs = mesh.GetUvs();
+        auto &normals = mesh.GetNormals();
+        auto &indices = mesh.GetIndices();
+
+        vertices.resize(4);
+		uvs.resize(4);
+		normals.resize(4);
+
+        vertices[0] = Vector3(-0.5f, 0.0f, -0.5f);
+        vertices[1] = Vector3(-0.5f, 0.0f,  0.5f);
+        vertices[2] = Vector3( 0.5f, 0.0f, -0.5f);
+        vertices[3] = Vector3( 0.5f, 0.0f,  0.5f);
+
+        uvs[0] = Vector2(0.0f, 0.0f);
+        uvs[1] = Vector2(0.0f, 1.0f);
+        uvs[2] = Vector2(1.0f, 0.0f);
+        uvs[3] = Vector2(1.0f, 1.0f);
+
+		indices = {
+            0, 1, 2,
+            2, 1, 3,
+        };
+
+        SetScale(&mesh, scale);
+        mesh.GenerateNormals();
+        mesh.Generate();
+        return mesh;
+    }
+
+    Mesh3D MeshGenerator::CreateSphere(const Vector3 &scale)
+    {
+        Mesh3D mesh;
+
+        auto &vertices = mesh.GetVertices();
+        auto &uvs = mesh.GetUvs();
+        auto &normals = mesh.GetNormals();
+        auto &indices = mesh.GetIndices();
+
+        const uint32_t sectorCount = 72;
+        const uint32_t stackCount = 24;
+		const uint32_t vertexCount = (sectorCount + 1) * (stackCount + 1);
+        const float radius = 0.5f;
+		const float PI = glm::pi<float>();
+        float x, y, z, xy;					// vertex position
+        const float lengthInv = 1.0f / radius;    // vertex normal
+        float s, t;                         // vertex texCoord
+        const float sectorStep = 2 * PI / sectorCount;
+        const float stackStep = PI / stackCount;
+        float sectorAngle, stackAngle;
+		uint32_t vertexIndex = 0;
+
+		vertices.resize(vertexCount);
+		uvs.resize(vertexCount);
+		normals.resize(vertexCount);
+
+        for(uint32_t i = 0; i <= stackCount; ++i)
+        {
+            stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+            xy = radius* glm::cos(stackAngle);             // r * cos(u)
+            z = radius* glm::sin(stackAngle);              // r * sin(u)
+
+            // add (sectorCount+1) vertices per stack
+            // the first and last vertices have same position and normal, but different tex coords
+            for(uint32_t j = 0; j <= sectorCount; ++j)
+            {
+                Vector3 vPosition;
+				Vector3 vNormal;
+				Vector2 vUV;
+
+                sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+                // vertex position (x, y, z)
+                x = xy * glm::cos(sectorAngle);             // r * cos(u) * cos(v)
+                y = xy * glm::sin(sectorAngle);             // r * cos(u) * sin(v)          
+                vPosition = Vector3(x, y, z);
+
+                vNormal.x = x * lengthInv;
+                vNormal.y = y * lengthInv;
+                vNormal.z = z * lengthInv;
+
+                // vertex tex coord (s, t) range between [0, 1]
+                s = (float) j / sectorCount;
+                t = (float) i / stackCount;          
+                vUV = Vector2(s, t);
+                
+                vertices[vertexIndex] = vPosition;
+				normals[vertexIndex] = vNormal;
+				uvs[vertexIndex] = vUV;
+				vertexIndex++;
+            }
+        }
+
+        uint32_t k1, k2;
+
+        for(uint32_t i = 0; i < stackCount; ++i)
+        {
+            k1 = i * (sectorCount + 1);     // beginning of current stack
+            k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+            for(uint32_t j = 0; j < sectorCount; ++j, ++k1, ++k2)
+            {
+                // 2 triangles per sector excluding first and last stacks
+                // k1 => k2 => k1+1
+                if(i != 0)
+                {
+                    indices.push_back(k1);
+                    indices.push_back(k2);
+                    indices.push_back(k1 + 1);
+                }
+
+                // k1+1 => k2 => k2+1
+                if(i != (stackCount-1))
+                {
+                    indices.push_back(k1 + 1);
+                    indices.push_back(k2);
+                    indices.push_back(k2 + 1);
+                }
+            }
+        }
+
+        SetScale(&mesh, scale);
+        mesh.Generate();
         return mesh;
     }
 }
