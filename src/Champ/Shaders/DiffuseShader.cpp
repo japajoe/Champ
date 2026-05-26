@@ -32,27 +32,28 @@ layout (location = 1) out vec4 BrightnessColor;
 
 uniform sampler2D uTexture;
 uniform vec4 uAlbedo;
-uniform vec3 uLightPos;
+uniform vec3 uLightDir;
 uniform vec3 uViewPos;
+uniform vec2 uTextureScale;
 
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
 
 void main() {
-    vec4 texColor = texture(uTexture, TexCoords);
+    vec4 texColor = texture(uTexture, TexCoords * uTextureScale);
     vec4 baseColor = texColor * uAlbedo;
 
     vec4 ambient = 0.2 * baseColor;
 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(uLightPos - FragPos);
+    vec3 lightDir = normalize(-uLightDir);
     float diff = max(dot(norm, lightDir), 0.0);
     vec4 diffuse = diff * baseColor;
 
     vec3 viewDir = normalize(uViewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0) * 0.1;
     vec4 specular = spec * vec4(0.5);
 
     vec4 result = ambient + diffuse + specular;
