@@ -206,6 +206,11 @@ namespace Champ
 		glUniformMatrix4fv(glGetUniformLocation(m_id, name), 1, false, value);
 	}
 
+	void Shader::SetMat4f(const char *name, int32_t n, const float *values)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(m_id, name), n, false, values);
+	}
+
 	void Shader::SetIntEx(int32_t location, int32_t value)
 	{
 		glUniform1i(location, value);

@@ -62,7 +62,6 @@ namespace Champ
 
         static void CreateTextures(bool multiSampled, uint32_t *textures, uint32_t count)
         {
-            // glCreateTextures(TextureTarget(multiSampled), count, textures); //OpenGL 4.5+
             glGenTextures(count, textures);
         }
 
@@ -113,7 +112,6 @@ namespace Champ
                     type = GL_UNSIGNED_INT_24_8;
                 }
 
-                // glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height); // OpenGL 4.2+
                 glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, nullptr);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);

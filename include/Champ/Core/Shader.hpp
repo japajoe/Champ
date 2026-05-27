@@ -32,6 +32,7 @@ namespace Champ
 		void SetMat2(const char *name, const float *value);
 		void SetMat3(const char *name, const float *value);
 		void SetMat4(const char *name, const float *value);
+		void SetMat4f(const char *name, int32_t n, const float *values);
 		void SetIntEx(int32_t location, int32_t value);
 		void SetUIntEx(int32_t location, uint32_t value);
 		void SetFloatEx(int32_t location, float value);
