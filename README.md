@@ -1,3 +1,6 @@
+# Cloning
+`git clone --recurse-submodules https://github.com/japajoe/Champ`
+
 # Example
 ```cpp
 #include <Champ/Core/ApplicationBase.hpp>
