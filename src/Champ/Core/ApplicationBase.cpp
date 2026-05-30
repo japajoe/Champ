@@ -14,12 +14,33 @@ namespace Champ
 {
     static ApplicationBase *gApplication = nullptr;
 
-    ApplicationBase::ApplicationBase(int width, int height, const std::string &title, bool vsync)
+    ApplicationBase::ApplicationBase(int32_t width, int32_t height, const std::string &title, bool vsync)
     {
-        this->width = width;
-        this->height = height;
-        this->vsync = vsync;
-        this->title = title;
+        settings.width = width;
+        settings.height = height;
+        settings.vsync = vsync;
+        settings.title = title;
+        settings.guiDocking = true;
+        settings.guiViewports = false;
+        window = nullptr;
+        gApplication = this;
+    }
+
+    ApplicationBase::ApplicationBase(ApplicationSettings *pSettings)
+    {
+        if(pSettings)
+        {
+            settings = *pSettings;
+        }
+        else
+        {
+            settings.width = 800;
+            settings.height = 600;
+            settings.vsync = true;
+            settings.title = "Champ";
+            settings.guiDocking = true;
+            settings.guiViewports = false;
+        }
         window = nullptr;
         gApplication = this;
     }
@@ -43,7 +64,7 @@ namespace Champ
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
-        window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+        window = glfwCreateWindow(settings.width, settings.height, settings.title.c_str(), nullptr, nullptr);
 
         if (window == nullptr)
         {
@@ -62,7 +83,7 @@ namespace Champ
 
         glfwMakeContextCurrent(window);
 #ifndef __EMSCRIPTEN__
-        glfwSwapInterval(vsync ? 1 : 0);
+        glfwSwapInterval(settings.vsync ? 1 : 0);
 #endif
         if (!OpenGL::Initialize())
         {
@@ -71,7 +92,7 @@ namespace Champ
             return -1;
         }
 
-        Graphics::Initialize(width, height, window);
+        Graphics::Initialize(settings.width, settings.height, settings.guiDocking, settings.guiViewports, window);
         Input::Initialize(window);
 
         OnLoad();
@@ -172,8 +193,8 @@ namespace Champ
     void ApplicationBase::FrameBufferSizeCallback(GLFWwindow *window, int32_t width, int32_t height)
     {
         ApplicationBase *app = static_cast<ApplicationBase *>(glfwGetWindowUserPointer(window));
-        app->width = width;
-        app->height = height;
+        app->settings.width = width;
+        app->settings.height = height;
         Graphics::SetViewport(0, 0, width, height);
     }
 

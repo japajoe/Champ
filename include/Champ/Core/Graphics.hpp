@@ -17,7 +17,7 @@ namespace Champ
         static void AddPostProcessor(PostProcessor *processor);
 
     private:
-        static void Initialize(int32_t width, int32_t height, GLFWwindow *window);
+        static void Initialize(int32_t width, int32_t height, bool guiDocking, bool guiViewports, GLFWwindow *window);
         static void Destroy();
         static void NewFrame();
         static void EndFrame();

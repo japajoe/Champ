@@ -19,7 +19,7 @@ namespace Champ
     static std::vector<PostProcessor *> gPostProcessors;
     static PingPongBuffer gPingpongBuffer;
 
-    void Graphics::Initialize(int32_t width, int32_t height, GLFWwindow *window)
+    void Graphics::Initialize(int32_t width, int32_t height, bool guiDocking, bool guiViewports, GLFWwindow *window)
     {
         gWidth = width;
         gHeight = height;
@@ -92,7 +92,7 @@ namespace Champ
             std::cout << ex.what() << '\n';
         }
 
-        ImGui::Manager::Initialize(window);
+        ImGui::Manager::Initialize(window, guiDocking, guiViewports);
     }
 
     void Graphics::Destroy()
