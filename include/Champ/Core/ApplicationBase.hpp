@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Image.hpp"
 #include <string>
 #include <cstdint>
 
@@ -13,8 +14,10 @@ namespace Champ
         int32_t height;
         std::string title;
         bool vsync;
+        bool fullScreen;
         bool guiDocking;
         bool guiViewports;
+        Image *icon;
     };
 
     class ApplicationBase

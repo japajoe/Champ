@@ -18,10 +18,12 @@ namespace Champ
     {
         settings.width = width;
         settings.height = height;
-        settings.vsync = vsync;
         settings.title = title;
+        settings.vsync = vsync;
+        settings.fullScreen = false;
         settings.guiDocking = true;
         settings.guiViewports = false;
+        settings.icon = nullptr;
         window = nullptr;
         gApplication = this;
     }
@@ -36,10 +38,12 @@ namespace Champ
         {
             settings.width = 800;
             settings.height = 600;
-            settings.vsync = true;
             settings.title = "Champ";
+            settings.vsync = true;
+            settings.fullScreen = false;
             settings.guiDocking = true;
             settings.guiViewports = false;
+            settings.icon = nullptr;
         }
         window = nullptr;
         gApplication = this;
@@ -63,8 +67,40 @@ namespace Champ
 #else
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
+        GLFWmonitor *monitor = nullptr;
+        const GLFWvidmode *mode = nullptr;
 
-        window = glfwCreateWindow(settings.width, settings.height, settings.title.c_str(), nullptr, nullptr);
+        if(settings.fullScreen)
+        {    
+            monitor = glfwGetPrimaryMonitor();
+            
+            if (!monitor) 
+            {
+                std::cerr << "No monitor found\n";
+                glfwTerminate();
+                return -1;
+            }
+
+            mode = glfwGetVideoMode(monitor);
+
+            if (!mode) 
+            {
+                std::cerr << "Failed to get video mode\n";
+                glfwTerminate();
+                return -1;
+            }
+        }
+
+        if(settings.fullScreen)
+        {
+            window = glfwCreateWindow(mode->width, mode->height, settings.title.c_str(), monitor, nullptr);
+            settings.width = mode->width;
+            settings.height = mode->height;
+        }
+        else
+        {
+            window = glfwCreateWindow(settings.width, settings.height, settings.title.c_str(), nullptr, nullptr);
+        }
 
         if (window == nullptr)
         {
@@ -80,6 +116,18 @@ namespace Champ
         glfwSetCharCallback(window, CharPressCallback);
         glfwSetMouseButtonCallback(window, MouseButtonPressCallback);
         glfwSetScrollCallback(window, ScrollCallback);
+
+        if(settings.icon)
+        {
+            if(settings.icon->IsLoaded())
+            {
+                GLFWimage image;
+                image.width  = settings.icon->GetWidth();
+                image.height = settings.icon->GetHeight();
+                image.pixels = settings.icon->GetData();
+                glfwSetWindowIcon(window, 1, &image);
+            }
+        }
 
         glfwMakeContextCurrent(window);
 #ifndef __EMSCRIPTEN__
