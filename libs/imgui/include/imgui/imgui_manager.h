@@ -5,7 +5,7 @@ struct GLFWwindow;
 
 namespace ImGui::Manager
 {
-    void Initialize(GLFWwindow *window);
+    void Initialize(GLFWwindow *window, bool enableDocking = true, bool enableViewports = false);
     void Destroy();
     void BeginFrame();
     void EndFrame();

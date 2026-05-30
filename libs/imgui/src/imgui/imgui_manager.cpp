@@ -6,7 +6,7 @@
 
 namespace ImGui::Manager
 {
-    void Initialize(GLFWwindow *window)
+    void Initialize(GLFWwindow *window, bool enableDocking, bool enableViewports)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -14,7 +14,10 @@ namespace ImGui::Manager
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+        if(enableDocking)
+            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+        if(enableViewports)
+            io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ImGui::StyleColorsDark();
 
